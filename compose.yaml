@@ -1,0 +1,7 @@
+services:
+  api:
+    build: .
+    image: bry-java-backend-challenge:local
+    container_name: bry-challenge-api
+    ports:
+      - "8080:8080"

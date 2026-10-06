@@ -1,0 +1,14 @@
+# Somente o necessário para o build entra no contexto do Docker
+target/
+.git/
+.github/
+.idea/
+.vscode/
+*.iml
+artifacts/
+docs/
+ROTEIRO.md
+README.md
+Dockerfile
+compose.yaml
+.dockerignore
