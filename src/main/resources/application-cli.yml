@@ -1,0 +1,13 @@
+# Perfil "cli": executa as etapas 1 a 3 do desafio e encerra, sem subir o servidor web.
+spring:
+  main:
+    web-application-type: none
+    banner-mode: off
+
+# Saída resumida no terminal: apenas as mensagens das etapas (erros continuam sendo exibidos)
+logging:
+  pattern:
+    console: "%msg%n"
+  level:
+    root: WARN
+    br.com.bry.challenge.cli: INFO

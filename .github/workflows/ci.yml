@@ -32,6 +32,12 @@ jobs:
       - name: Compilar, testar e gerar cobertura
         run: ./mvnw -B verify
 
+      - name: Executar as etapas do desafio (modo CLI)
+        run: java -jar target/bry-java-backend-challenge-*.jar --spring.profiles.active=cli
+
+      - name: Conferir o hash da etapa 1 com o sha512sum
+        run: sha512sum -c artifacts/doc.txt.sha512
+
       - name: Publicar relatório de cobertura
         if: always()
         uses: actions/upload-artifact@v7

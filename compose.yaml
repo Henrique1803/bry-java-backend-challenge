@@ -1,7 +1,24 @@
+x-application: &application
+  build: .
+  image: bry-java-backend-challenge:local
+
 services:
+  # API REST: docker compose up --build
   api:
-    build: .
-    image: bry-java-backend-challenge:local
+    <<: *application
     container_name: bry-challenge-api
     ports:
       - "8080:8080"
+
+  # Etapas 1 a 3 do desafio: docker compose run --rm cli
+  # Os artefatos são gravados em ./artifacts com o usuário do host (por padrão uid/gid 1000;
+  # em outro usuário: HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose run --rm cli).
+  cli:
+    <<: *application
+    profiles: ["cli"]
+    command: ["--spring.profiles.active=cli"]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    volumes:
+      - ./artifacts:/app/artifacts
+    healthcheck:
+      disable: true

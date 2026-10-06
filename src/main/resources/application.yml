@@ -10,3 +10,7 @@ management:
     web:
       exposure:
         include: health,info
+
+challenge:
+  document: resources/arquivos/doc.txt
+  output-directory: artifacts
