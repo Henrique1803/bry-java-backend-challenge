@@ -1,0 +1,32 @@
+package br.com.bry.challenge.support;
+
+import java.nio.file.Path;
+
+/** Artefatos fornecidos pelo desafio e valores de referência usados nos testes. */
+public final class ChallengeResources {
+
+    /** Documento a ser processado nas etapas 1, 2 e 3. */
+    public static final Path DOCUMENT = Path.of("resources/arquivos/doc.txt");
+
+    /** SHA-512 do documento, obtido de forma independente com {@code sha512sum}. */
+    public static final String DOCUMENT_SHA_512 =
+            "dc1a7de77c59a29f366a4b154b03ad7d99013e36e08beb50d976358bea7b0458"
+            + "84fe72111b27cf7d6302916b2691ac7696c1637e1ab44584d8d6613825149e35";
+
+    /** PKCS12 com a chave privada e o certificado do signatário. */
+    public static final Path PKCS12 = Path.of("resources/pkcs12/certificado_teste_hub.pfx");
+
+    /** Alias da chave privada no PKCS12. */
+    public static final String PKCS12_ALIAS = "{e2618a8b-20de-4dd2-b209-70912e3177f4}";
+
+    /** Diretório com os certificados da cadeia confiável (AC intermediária e AC raiz). */
+    public static final Path TRUST_CHAIN_DIRECTORY = Path.of("resources/cadeia");
+
+    private ChallengeResources() {
+    }
+
+    /** Senha do PKCS12. Retorna uma cópia nova a cada chamada, pois quem a recebe pode zerá-la. */
+    public static char[] pkcs12Password() {
+        return "bry123456".toCharArray();
+    }
+}

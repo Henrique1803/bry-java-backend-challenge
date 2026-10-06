@@ -8,6 +8,10 @@ public class CryptoException extends RuntimeException {
 
     private final CryptoErrorCode errorCode;
 
+    public CryptoException(CryptoErrorCode errorCode, String message) {
+        this(errorCode, message, null);
+    }
+
     public CryptoException(CryptoErrorCode errorCode, String message, Throwable cause) {
         super(message, cause);
         this.errorCode = errorCode;

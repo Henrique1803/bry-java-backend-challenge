@@ -1,5 +1,7 @@
 package br.com.bry.challenge.cli;
 
+import static br.com.bry.challenge.support.ChallengeResources.DOCUMENT;
+import static br.com.bry.challenge.support.ChallengeResources.DOCUMENT_SHA_512;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -18,11 +20,6 @@ import br.com.bry.challenge.crypto.DigestService;
 
 class ChallengeStepsRunnerTest {
 
-    private static final Path DOCUMENT = Path.of("resources/arquivos/doc.txt");
-
-    private static final String DOCUMENT_SHA_512 =
-            "dc1a7de77c59a29f366a4b154b03ad7d99013e36e08beb50d976358bea7b0458"
-            + "84fe72111b27cf7d6302916b2691ac7696c1637e1ab44584d8d6613825149e35";
 
     private final DigestService digestService = new DigestService(new BouncyCastleProvider());
 

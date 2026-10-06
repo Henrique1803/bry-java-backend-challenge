@@ -1,5 +1,7 @@
 package br.com.bry.challenge.crypto;
 
+import static br.com.bry.challenge.support.ChallengeResources.DOCUMENT;
+import static br.com.bry.challenge.support.ChallengeResources.DOCUMENT_SHA_512;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -22,12 +24,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 class DigestServiceTest {
 
-    private static final Path DOCUMENT = Path.of("resources/arquivos/doc.txt");
-
-    /** Valor obtido de forma independente com {@code sha512sum resources/arquivos/doc.txt}. */
-    private static final String DOCUMENT_SHA_512 =
-            "dc1a7de77c59a29f366a4b154b03ad7d99013e36e08beb50d976358bea7b0458"
-            + "84fe72111b27cf7d6302916b2691ac7696c1637e1ab44584d8d6613825149e35";
 
     private static final HexFormat HEX = HexFormat.of();
 
@@ -101,9 +97,8 @@ class DigestServiceTest {
     void rejectsUnsupportedAlgorithm() {
         assertThatThrownBy(() -> digestService.digest(new byte[] {1, 2, 3}, "SHA-999"))
                 .isInstanceOf(CryptoException.class)
-                .hasMessageContaining("SHA-999")
-                .extracting(e -> ((CryptoException) e).getErrorCode())
-                .isEqualTo(CryptoErrorCode.UNSUPPORTED_ALGORITHM);
+                .hasFieldOrPropertyWithValue("errorCode", CryptoErrorCode.UNSUPPORTED_ALGORITHM)
+                .hasMessageContaining("SHA-999");
     }
 
     @Test
