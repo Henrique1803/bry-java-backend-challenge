@@ -1,0 +1,13 @@
+# Normaliza fins de linha para LF em arquivos de texto
+* text=auto eol=lf
+*.cmd text eol=crlf
+
+# Arquivos do desafio e artefatos gerados nunca devem ser alterados pelo Git
+# (qualquer conversão de fim de linha mudaria o hash e invalidaria a assinatura)
+resources/** -text
+artifacts/** -text
+*.pfx binary
+*.p12 binary
+*.cer binary
+*.p7s binary
+*.jar binary
