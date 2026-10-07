@@ -1,6 +1,12 @@
 package br.com.bry.challenge.support;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+
+import br.com.bry.challenge.crypto.Pkcs12CredentialLoader;
+import br.com.bry.challenge.crypto.SigningCredential;
 
 /** Artefatos fornecidos pelo desafio e valores de referência usados nos testes. */
 public final class ChallengeResources {
@@ -28,5 +34,12 @@ public final class ChallengeResources {
     /** Senha do PKCS12. Retorna uma cópia nova a cada chamada, pois quem a recebe pode zerá-la. */
     public static char[] pkcs12Password() {
         return "bry123456".toCharArray();
+    }
+
+    /** Carrega a credencial do signatário a partir do PKCS12 do desafio. */
+    public static SigningCredential signingCredential() throws IOException {
+        try (InputStream input = Files.newInputStream(PKCS12)) {
+            return new Pkcs12CredentialLoader().load(input, pkcs12Password(), PKCS12_ALIAS);
+        }
     }
 }

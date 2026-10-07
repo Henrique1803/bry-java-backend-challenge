@@ -19,5 +19,8 @@ public enum CryptoErrorCode {
     PRIVATE_KEY_NOT_FOUND,
 
     /** A chave privada não é do tipo exigido (RSA). */
-    UNSUPPORTED_KEY
+    UNSUPPORTED_KEY,
+
+    /** Falha ao gerar a assinatura CMS. */
+    SIGNATURE_FAILED
 }
