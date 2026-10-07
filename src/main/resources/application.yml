@@ -1,6 +1,11 @@
 spring:
   application:
     name: bry-java-backend-challenge
+  # Limites de upload da API: rejeita arquivos grandes demais antes de processá-los
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 21MB
 
 server:
   port: 8080

@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +31,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.mock.web.MockPart;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -58,10 +60,7 @@ class SignatureControllerIntegrationTest {
     @Test
     @DisplayName("POST /signature/ retorna no corpo a assinatura CMS attached em Base64")
     void signsDocument() throws Exception {
-        String base64 = mockMvc.perform(multipart("/signature/")
-                        .file(new MockMultipartFile("file", "doc.txt", MediaType.TEXT_PLAIN_VALUE, document))
-                        .file(new MockMultipartFile("pkcs12", "certificado.pfx", "application/x-pkcs12", Files.readAllBytes(PKCS12)))
-                        .param("password", new String(pkcs12Password())))
+        String base64 = sign(document, Files.readAllBytes(PKCS12), new String(pkcs12Password()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_PLAIN))
                 .andReturn().getResponse().getContentAsString();
@@ -116,10 +115,7 @@ class SignatureControllerIntegrationTest {
     @Test
     @DisplayName("POST /verify/ valida a assinatura retornada por POST /signature/")
     void verifiesSignatureFromSignatureEndpoint() throws Exception {
-        String base64 = mockMvc.perform(multipart("/signature/")
-                        .file(new MockMultipartFile("file", "doc.txt", MediaType.TEXT_PLAIN_VALUE, document))
-                        .file(new MockMultipartFile("pkcs12", "certificado.pfx", "application/x-pkcs12", Files.readAllBytes(PKCS12)))
-                        .param("password", new String(pkcs12Password())))
+        String base64 = sign(document, Files.readAllBytes(PKCS12), new String(pkcs12Password()))
                 .andReturn().getResponse().getContentAsString();
 
         verify(base64.getBytes(StandardCharsets.US_ASCII))
@@ -154,6 +150,87 @@ class SignatureControllerIntegrationTest {
                 .andExpect(jsonPath("$.details.integrityValid").value(true))
                 .andExpect(jsonPath("$.details.certificateTrusted").value(false))
                 .andExpect(jsonPath("$.details.certificationPath").isEmpty());
+    }
+
+    @Test
+    @DisplayName("POST /signature/ retorna 400 INVALID_PASSWORD quando a senha do PKCS12 está incorreta")
+    void rejectsWrongPassword() throws Exception {
+        sign(document, Files.readAllBytes(PKCS12), "senha-errada")
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_PASSWORD"))
+                .andExpect(jsonPath("$.detail").value("Senha do PKCS12 incorreta"));
+    }
+
+    @Test
+    @DisplayName("POST /signature/ retorna 400 INVALID_PKCS12 quando o arquivo enviado não é um PKCS12")
+    void rejectsInvalidPkcs12() throws Exception {
+        sign(document, "não é um PKCS12".getBytes(StandardCharsets.UTF_8), new String(pkcs12Password()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_PKCS12"));
+    }
+
+    @Test
+    @DisplayName("POST /signature/ retorna 400 EMPTY_FILE quando o arquivo a ser assinado está vazio")
+    void rejectsEmptyDocument() throws Exception {
+        sign(new byte[0], Files.readAllBytes(PKCS12), new String(pkcs12Password()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("EMPTY_FILE"));
+    }
+
+    @Test
+    @DisplayName("POST /signature/ retorna 400 MISSING_FIELD indicando o arquivo ausente")
+    void rejectsMissingFile() throws Exception {
+        mockMvc.perform(multipart("/signature/")
+                        .file(new MockMultipartFile("pkcs12", "certificado.pfx", "application/x-pkcs12", Files.readAllBytes(PKCS12)))
+                        .part(new MockPart("password", new String(pkcs12Password()).getBytes(StandardCharsets.UTF_8))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MISSING_FIELD"))
+                .andExpect(jsonPath("$.detail").value("O campo 'file' é obrigatório"));
+    }
+
+    @Test
+    @DisplayName("POST /signature/ retorna 400 MISSING_FIELD indicando a senha ausente")
+    void rejectsMissingPassword() throws Exception {
+        mockMvc.perform(multipart("/signature/")
+                        .file(new MockMultipartFile("file", "doc.txt", MediaType.TEXT_PLAIN_VALUE, document))
+                        .file(new MockMultipartFile("pkcs12", "certificado.pfx", "application/x-pkcs12", Files.readAllBytes(PKCS12))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MISSING_FIELD"))
+                .andExpect(jsonPath("$.detail").value("O campo 'password' é obrigatório"));
+    }
+
+    @Test
+    @DisplayName("POST /verify/ retorna 400 INVALID_SIGNATURE_FORMAT quando o arquivo não é uma assinatura CMS")
+    void rejectsContentThatIsNotSignature() throws Exception {
+        verify("não é uma assinatura".getBytes(StandardCharsets.UTF_8))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.code").value("INVALID_SIGNATURE_FORMAT"));
+    }
+
+    @Test
+    @DisplayName("POST /verify/ retorna 400 MISSING_FIELD quando a assinatura não é enviada")
+    void rejectsMissingSignature() throws Exception {
+        mockMvc.perform(multipart("/verify/").file(new MockMultipartFile("outro", "x.txt", MediaType.TEXT_PLAIN_VALUE, document)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("MISSING_FIELD"))
+                .andExpect(jsonPath("$.detail").value("O campo 'signature' é obrigatório"));
+    }
+
+    @Test
+    @DisplayName("POST /verify/ retorna 415 UNSUPPORTED_MEDIA_TYPE quando a requisição não é multipart/form-data")
+    void rejectsRequestThatIsNotMultipart() throws Exception {
+        mockMvc.perform(post("/verify/").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_MEDIA_TYPE"));
+    }
+
+    private ResultActions sign(byte[] file, byte[] pkcs12, String password) throws Exception {
+        return mockMvc.perform(multipart("/signature/")
+                .file(new MockMultipartFile("file", "doc.txt", MediaType.TEXT_PLAIN_VALUE, file))
+                .file(new MockMultipartFile("pkcs12", "certificado.pfx", "application/x-pkcs12", pkcs12))
+                .part(new MockPart("password", password.getBytes(StandardCharsets.UTF_8))));
     }
 
     private ResultActions verify(byte[] signatureFile) throws Exception {

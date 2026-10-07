@@ -1,0 +1,59 @@
+{
+  "info": {
+    "name": "Desafio Back-End Java - Bry",
+    "description": "Requisições da API. Os arquivos são buscados a partir da raiz do projeto (configure o Working Directory do Postman ou selecione os arquivos manualmente).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    }
+  ],
+  "item": [
+    {
+      "name": "POST /signature/",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/signature/",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "resources/arquivos/doc.txt"
+            },
+            {
+              "key": "pkcs12",
+              "type": "file",
+              "src": "resources/pkcs12/certificado_teste_hub.pfx"
+            },
+            {
+              "key": "password",
+              "type": "text",
+              "value": "bry123456"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "POST /verify/",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/verify/",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "signature",
+              "type": "file",
+              "src": "artifacts/doc.txt.p7s"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
