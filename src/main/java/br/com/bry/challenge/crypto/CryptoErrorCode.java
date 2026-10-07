@@ -22,5 +22,8 @@ public enum CryptoErrorCode {
     UNSUPPORTED_KEY,
 
     /** Falha ao gerar a assinatura CMS. */
-    SIGNATURE_FAILED
+    SIGNATURE_FAILED,
+
+    /** O conteúdo recebido não é uma assinatura CMS attached com um único signatário. */
+    INVALID_SIGNATURE_FORMAT
 }

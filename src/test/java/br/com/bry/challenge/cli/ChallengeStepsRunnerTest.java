@@ -4,28 +4,38 @@ import static br.com.bry.challenge.support.ChallengeResources.DOCUMENT;
 import static br.com.bry.challenge.support.ChallengeResources.DOCUMENT_SHA_512;
 import static br.com.bry.challenge.support.ChallengeResources.PKCS12;
 import static br.com.bry.challenge.support.ChallengeResources.PKCS12_ALIAS;
+import static br.com.bry.challenge.support.ChallengeResources.TRUST_CHAIN_DIRECTORY;
 import static br.com.bry.challenge.support.ChallengeResources.pkcs12Password;
+import static br.com.bry.challenge.support.TestCertificates.rsaKeyPair;
+import static br.com.bry.challenge.support.TestCertificates.selfSignedCertificate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
 
 import org.bouncycastle.cms.CMSSignedData;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.DefaultApplicationArguments;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import br.com.bry.challenge.config.ChallengeProperties;
+import br.com.bry.challenge.crypto.CertificateTrustValidator;
 import br.com.bry.challenge.crypto.CmsSigner;
+import br.com.bry.challenge.crypto.CmsVerifier;
 import br.com.bry.challenge.crypto.CryptoErrorCode;
 import br.com.bry.challenge.crypto.CryptoException;
 import br.com.bry.challenge.crypto.DigestService;
 import br.com.bry.challenge.crypto.Pkcs12CredentialLoader;
 
+@ExtendWith(OutputCaptureExtension.class)
 class ChallengeStepsRunnerTest {
 
     private static final BouncyCastleProvider PROVIDER = new BouncyCastleProvider();
@@ -58,6 +68,22 @@ class ChallengeStepsRunnerTest {
     }
 
     @Test
+    @DisplayName("Etapa 3: verifica a assinatura gerada e imprime as informações do signatário")
+    void printsSignatureVerification(CapturedOutput output) throws Exception {
+        runner(DOCUMENT, tempDir.resolve("artifacts"), new String(pkcs12Password())).run(new DefaultApplicationArguments());
+
+        assertThat(output)
+                .contains("Integridade:            true")
+                .contains("Certificado confiável:  true")
+                .contains("Resultado:              VÁLIDA")
+                .contains("Algoritmo de hash:      SHA-512")
+                .contains("Hash do documento:      " + DOCUMENT_SHA_512)
+                .contains("Signatário (CN):        HUB2 TESTES")
+                .contains("Emissor:                C=BR,O=BRy Tecnologia SA,OU=Autoridade Certificadora Raiz BRy Tecnologia v3,CN=AC BRy Servidor Seguro v3")
+                .contains("Caminho de certificação: 1. CN=HUB2 TESTES");
+    }
+
+    @Test
     @DisplayName("Falha quando o documento configurado não existe")
     void failsWhenDocumentDoesNotExist() {
         Path missingDocument = tempDir.resolve("inexistente.txt");
@@ -74,10 +100,26 @@ class ChallengeStepsRunnerTest {
                 .hasFieldOrPropertyWithValue("errorCode", CryptoErrorCode.INVALID_PASSWORD);
     }
 
+    @Test
+    @DisplayName("Falha na etapa 3 quando o certificado do signatário não pertence à cadeia confiável configurada")
+    void failsWhenSignatureIsNotTrusted() throws Exception {
+        Path otherTrustChain = Files.createDirectories(tempDir.resolve("outra-cadeia"));
+        Files.write(otherTrustChain.resolve("raiz.cer"), selfSignedCertificate(rsaKeyPair(), "Outra AC raiz").getEncoded());
+
+        assertThatThrownBy(() -> runner(DOCUMENT, tempDir, new String(pkcs12Password()), otherTrustChain).run(new DefaultApplicationArguments()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("etapa 3");
+    }
+
     private static ChallengeStepsRunner runner(Path document, Path outputDirectory, String pkcs12Password) {
+        return runner(document, outputDirectory, pkcs12Password, TRUST_CHAIN_DIRECTORY);
+    }
+
+    private static ChallengeStepsRunner runner(Path document, Path outputDirectory, String pkcs12Password, Path trustChainDirectory) {
         ChallengeProperties properties = new ChallengeProperties(document, outputDirectory,
-                new ChallengeProperties.Pkcs12(PKCS12, PKCS12_ALIAS, pkcs12Password));
-        return new ChallengeStepsRunner(new DigestService(PROVIDER), new Pkcs12CredentialLoader(),
-                new CmsSigner(PROVIDER), properties);
+                new ChallengeProperties.Pkcs12(PKCS12, PKCS12_ALIAS, pkcs12Password), trustChainDirectory);
+        DigestService digestService = new DigestService(PROVIDER);
+        CmsVerifier cmsVerifier = new CmsVerifier(digestService, CertificateTrustValidator.fromDirectory(trustChainDirectory, PROVIDER), PROVIDER, Clock.systemUTC());
+        return new ChallengeStepsRunner(digestService, new Pkcs12CredentialLoader(), new CmsSigner(PROVIDER, Clock.systemUTC()), cmsVerifier, properties);
     }
 }

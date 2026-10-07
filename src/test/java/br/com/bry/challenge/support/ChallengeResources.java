@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 
 import br.com.bry.challenge.crypto.Pkcs12CredentialLoader;
 import br.com.bry.challenge.crypto.SigningCredential;
@@ -28,6 +30,12 @@ public final class ChallengeResources {
     /** Diretório com os certificados da cadeia confiável (AC intermediária e AC raiz). */
     public static final Path TRUST_CHAIN_DIRECTORY = Path.of("resources/cadeia");
 
+    /** AC raiz da cadeia confiável. */
+    public static final Path ROOT_CA = TRUST_CHAIN_DIRECTORY.resolve("ac_raiz_bry_v3.cer");
+
+    /** AC intermediária, emissora do certificado do signatário. */
+    public static final Path INTERMEDIATE_CA = TRUST_CHAIN_DIRECTORY.resolve("ac_bry_servidor_seguro_v3.cer");
+
     private ChallengeResources() {
     }
 
@@ -40,6 +48,13 @@ public final class ChallengeResources {
     public static SigningCredential signingCredential() throws IOException {
         try (InputStream input = Files.newInputStream(PKCS12)) {
             return new Pkcs12CredentialLoader().load(input, pkcs12Password(), PKCS12_ALIAS);
+        }
+    }
+
+    /** Lê um certificado X.509 (DER ou PEM). */
+    public static X509Certificate readCertificate(Path file) throws Exception {
+        try (InputStream input = Files.newInputStream(file)) {
+            return (X509Certificate) CertificateFactory.getInstance("X.509").generateCertificate(input);
         }
     }
 }

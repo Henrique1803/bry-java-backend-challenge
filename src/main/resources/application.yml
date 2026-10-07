@@ -11,9 +11,12 @@ management:
       exposure:
         include: health,info
 
-# Artefatos do desafio usados pelo modo CLI (perfil "cli"). Os valores podem ser sobrescritos por
-# argumentos (--challenge.pkcs12.password=...) ou variáveis de ambiente (CHALLENGE_PKCS12_PASSWORD).
+# Artefatos do desafio. Os valores podem ser sobrescritos por argumentos
+# (--challenge.pkcs12.password=...) ou variáveis de ambiente (CHALLENGE_PKCS12_PASSWORD).
 challenge:
+  # Cadeia confiável (AC raiz e intermediária) usada na verificação de assinaturas (CLI e API)
+  trust-chain-directory: resources/cadeia
+  # Usados apenas pelo modo CLI (perfil "cli")
   document: resources/arquivos/doc.txt
   output-directory: artifacts
   pkcs12:

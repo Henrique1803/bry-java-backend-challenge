@@ -39,15 +39,19 @@ public final class TestCertificates {
 
     /** Certificado autoassinado com {@code CN=<commonName>}, válido de ontem até daqui a um ano. */
     public static X509Certificate selfSignedCertificate(KeyPair keyPair, String commonName) throws Exception {
-        X500Name name = new X500Name("CN=" + commonName);
         Instant now = Instant.now();
+        return selfSignedCertificate(keyPair, commonName, now.minus(Duration.ofDays(1)), now.plus(Duration.ofDays(365)));
+    }
+
+    /** Certificado autoassinado com {@code CN=<commonName>} e o período de validade informado. */
+    public static X509Certificate selfSignedCertificate(KeyPair keyPair, String commonName, Instant notBefore, Instant notAfter) throws Exception {
+        X500Name name = new X500Name("CN=" + commonName);
         String signatureAlgorithm = "EC".equals(keyPair.getPrivate().getAlgorithm())
                 ? "SHA256withECDSA"
                 : "SHA256withRSA";
 
-        var builder = new JcaX509v3CertificateBuilder(name, BigInteger.valueOf(now.toEpochMilli()),
-                Date.from(now.minus(Duration.ofDays(1))), Date.from(now.plus(Duration.ofDays(365))),
-                name, keyPair.getPublic());
+        var builder = new JcaX509v3CertificateBuilder(name, BigInteger.valueOf(System.nanoTime()),
+                Date.from(notBefore), Date.from(notAfter), name, keyPair.getPublic());
         var signer = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
         return new JcaX509CertificateConverter().getCertificate(builder.build(signer));
     }

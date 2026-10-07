@@ -11,8 +11,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.nio.file.Files;
 import java.security.KeyPair;
 import java.security.cert.X509Certificate;
+import java.time.Clock;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.List;
 
@@ -43,10 +44,13 @@ class CmsSignerTest {
 
     private static final BouncyCastleProvider PROVIDER = new BouncyCastleProvider();
 
+    /** Momento fixo da assinatura, para que os testes não dependam da data em que são executados. */
+    private static final Instant NOW = Instant.parse("2026-10-01T12:00:00Z");
+
     private static SigningCredential credential;
     private static byte[] document;
 
-    private final CmsSigner signer = new CmsSigner(PROVIDER);
+    private final CmsSigner signer = new CmsSigner(PROVIDER, Clock.fixed(NOW, ZoneOffset.UTC));
 
     @BeforeAll
     static void loadChallengeResources() throws Exception {
@@ -55,7 +59,7 @@ class CmsSignerTest {
     }
 
     @Test
-    @DisplayName("Etapa 2: gera assinatura attached, com o documento original dentro da estrutura CMS")
+    @DisplayName("Gera assinatura attached, com o conteúdo original dentro da estrutura CMS")
     void embedsOriginalDocument() throws Exception {
         CMSSignedData signedData = new CMSSignedData(signer.sign(document, credential));
 
@@ -74,7 +78,7 @@ class CmsSignerTest {
     }
 
     @Test
-    @DisplayName("O atributo messageDigest contém o mesmo SHA-512 calculado na etapa 1")
+    @DisplayName("O atributo messageDigest contém o SHA-512 do conteúdo assinado")
     void messageDigestMatchesDocumentHash() throws Exception {
         AttributeTable attributes = singleSigner(signer.sign(document, credential)).getSignedAttributes();
 
@@ -85,17 +89,24 @@ class CmsSignerTest {
     }
 
     @Test
-    @DisplayName("Inclui o atributo assinado signingTime com o momento da assinatura")
+    @DisplayName("Inclui o atributo assinado signingTime com o momento da assinatura, obtido do relógio da aplicação")
     void includesSigningTime() throws Exception {
-        // O signingTime é codificado com precisão de segundos
-        Instant before = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         AttributeTable attributes = singleSigner(signer.sign(document, credential)).getSignedAttributes();
-        Instant after = Instant.now();
 
         Attribute signingTime = attributes.get(CMSAttributes.signingTime);
         Instant signedAt = Time.getInstance(signingTime.getAttrValues().getObjectAt(0)).getDate().toInstant();
 
-        assertThat(signedAt).isBetween(before, after);
+        assertThat(signedAt).isEqualTo(NOW);
+    }
+
+    @Test
+    @DisplayName("Mantém os atributos assinados padrão: contentType, messageDigest e cmsAlgorithmProtection")
+    void keepsStandardSignedAttributes() throws Exception {
+        AttributeTable attributes = singleSigner(signer.sign(document, credential)).getSignedAttributes();
+
+        assertThat(attributes.get(CMSAttributes.contentType)).isNotNull();
+        assertThat(attributes.get(CMSAttributes.messageDigest)).isNotNull();
+        assertThat(attributes.get(CMSAttributes.cmsAlgorithmProtect)).isNotNull();
     }
 
     @Test

@@ -50,7 +50,7 @@ class DigestServiceTest {
     }
 
     @Test
-    @DisplayName("Etapa 1: calcula o SHA-512 do documento doc.txt")
+    @DisplayName("Calcula o SHA-512 do conteúdo de um arquivo")
     void computesHashOfChallengeDocument() {
         byte[] hash = digestService.digest(DOCUMENT, DigestService.SHA_512);
 
