@@ -13,7 +13,7 @@
 
     <groupId>br.com.bry</groupId>
     <artifactId>bry-java-backend-challenge</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>bry-java-backend-challenge</name>
     <description>Desafio Back-End Java da Bry: hash SHA-512, assinatura e verificação CMS e API REST</description>
 

@@ -4,6 +4,8 @@ on:
   push:
     branches: ["**"]
   pull_request:
+  # Permite que o workflow de release reaproveite este pipeline antes de publicar
+  workflow_call:
 
 permissions:
   contents: read
@@ -101,6 +103,16 @@ jobs:
           echo "A aplicação não ficou saudável a tempo"
           docker logs app
           exit 1
+
+      # Exercita os dois endpoints na imagem final: assina o doc.txt e verifica a assinatura gerada
+      - name: Testar os endpoints no container
+        run: |
+          curl -fsS -F file=@resources/arquivos/doc.txt \
+               -F pkcs12=@resources/pkcs12/certificado_teste_hub.pfx \
+               -F password=bry123456 \
+               http://localhost:8080/signature/ -o "$RUNNER_TEMP/assinatura.b64"
+          curl -fsS -F signature=@"$RUNNER_TEMP/assinatura.b64" http://localhost:8080/verify/ | tee "$RUNNER_TEMP/verificacao.json"
+          jq -e '.status == "VALIDO"' "$RUNNER_TEMP/verificacao.json"
 
       - name: Remover container
         if: always()
