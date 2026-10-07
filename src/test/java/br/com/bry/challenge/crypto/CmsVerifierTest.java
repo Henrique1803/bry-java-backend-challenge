@@ -16,6 +16,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -76,6 +77,25 @@ class CmsVerifierTest {
         assertThat(result.digestAlgorithm()).isEqualTo("SHA-512");
         assertThat(result.documentHash()).isEqualTo(DOCUMENT_SHA_512);
         assertThat(result.certificationPath()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("Aceita a assinatura codificada em Base64")
+    void acceptsBase64Signature() {
+        byte[] base64 = Base64.getEncoder().encode(signer.sign(document, credential));
+
+        VerificationResult result = verifier.verify(base64);
+
+        assertThat(result.valid()).isTrue();
+        assertThat(result.documentHash()).isEqualTo(DOCUMENT_SHA_512);
+    }
+
+    @Test
+    @DisplayName("Aceita a assinatura em Base64 com quebras de linha")
+    void acceptsBase64SignatureWithLineBreaks() {
+        byte[] base64 = Base64.getMimeEncoder().encode(signer.sign(document, credential));
+
+        assertThat(verifier.verify(base64).valid()).isTrue();
     }
 
     @Test

@@ -2,12 +2,14 @@ package br.com.bry.challenge.crypto;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Provider;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HexFormat;
 import java.util.List;
@@ -59,12 +61,13 @@ public class CmsVerifier {
     }
 
     /**
-     * Verifica a assinatura CMS codificada em DER (conteúdo de um arquivo .p7s).
+     * Verifica a assinatura CMS attached. A assinatura pode estar em Base64 (com prioridade, podendo
+     * conter quebras de linha) ou em DER (conteúdo binário de um arquivo .p7s).
      */
     public VerificationResult verify(byte[] signature) {
         Objects.requireNonNull(signature, "signature");
 
-        ParsedSignature parsed = parse(signature);
+        ParsedSignature parsed = parse(decode(signature));
         String documentHash = HexFormat.of().formatHex(digestService.digest(parsed.content(), parsed.digestAlgorithm()));
         List<String> failureReasons = new ArrayList<>();
 
@@ -81,6 +84,20 @@ public class CmsVerifier {
 
         return new VerificationResult(integrityValid, trust.trusted(), parsed.signerCertificate(), parsed.signingTime(),
                 parsed.digestAlgorithm(), documentHash, trust.certificationPath(), failureReasons);
+    }
+
+    /**
+     * Retorna o DER da assinatura: decodifica o conteúdo quando ele é Base64 e, caso contrário,
+     * considera que ele já está em DER.
+     */
+    private static byte[] decode(byte[] signature) {
+        // ISO-8859-1 mapeia cada byte para um caractere, de modo que bytes binários (DER) nunca formam Base64 válido
+        String base64 = new String(signature, StandardCharsets.ISO_8859_1).replaceAll("\\s", "");
+        try {
+            return Base64.getDecoder().decode(base64);
+        } catch (IllegalArgumentException notBase64) {
+            return signature;
+        }
     }
 
     /**
