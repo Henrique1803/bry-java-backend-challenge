@@ -210,7 +210,7 @@ OBJECT        :messageDigest
 OBJECT        :sha512WithRSAEncryption     (algoritmo de assinatura)
 \end{lstlisting}
 
-O BouncyCastle 1.86 registra o algoritmo de assinatura como \texttt{sha512WithRSAEncryption}, e não como \texttt{rsaEncryption}. As duas formas são aceitas pela RFC 5754.
+O BouncyCastle 1.86 registra o algoritmo de assinatura como \texttt{sha512WithRSAEncryption}, conforme o identificador utilizado para RSA com SHA-512 em CMS.
 
 \subsection{Etapa 3 --- Verificação da assinatura}
 
@@ -218,9 +218,9 @@ O BouncyCastle 1.86 registra o algoritmo de assinatura como \texttt{sha512WithRS
 
 A classe \texttt{CmsVerifier} recebe a assinatura em Base64 ou em DER (o Base64 tem prioridade). O conteúdo é decodificado como Base64 e, se não for um Base64 válido, é tratado como DER.
 
-A verificação ocorre em duas fases. Na primeira, toda a estrutura CMS é decodificada de uma vez: o signatário, o conteúdo, os certificados, o algoritmo e o \texttt{signingTime}. O BouncyCastle lê algumas partes da estrutura apenas quando elas são acessadas e sinaliza dados malformados com exceções não checadas. Por isso, qualquer falha dessa fase é convertida no erro \texttt{INVALID\_SIGNATURE\_FORMAT}. Também são rejeitadas assinaturas detached (sem o documento) e assinaturas com mais de um signatário. Na segunda fase, a verificação trabalha apenas com dados já decodificados.
+A verificação ocorre em duas fases. Na primeira, a estrutura CMS é lida e os dados necessários à verificação são extraídos: o signatário, o conteúdo, os certificados, o algoritmo e o \texttt{signingTime}. O BouncyCastle lê algumas partes da estrutura apenas quando elas são acessadas e sinaliza dados malformados com exceções não checadas. Por isso, qualquer falha dessa fase é convertida no erro \texttt{INVALID\_SIGNATURE\_FORMAT}. Também são rejeitadas assinaturas detached (sem o documento) e assinaturas com mais de um signatário. Na segunda fase, a verificação trabalha apenas com dados já decodificados.
 
-A integridade é verificada com \texttt{SignerInformation.verify}, que confere a assinatura RSA sobre os atributos assinados, compara o atributo \texttt{messageDigest} com o hash do conteúdo e verifica se o certificado era válido na data declarada em \texttt{signingTime}. Cada falha gera um motivo específico (documento alterado, assinatura que não corresponde à chave do certificado ou certificado fora da validade na data da assinatura).
+A integridade é verificada com \texttt{SignerInformation.verify}, que valida a assinatura RSA e verifica a correspondência entre o atributo \texttt{messageDigest} e o conteúdo assinado. Quando o \texttt{signingTime} está presente, também confere se o certificado era válido na data declarada. A confiança do certificado, incluindo sua validade na data atual, é avaliada separadamente pelo \texttt{CertificateTrustValidator}, utilizando a data de referência definida pelo \texttt{Clock} da aplicação. Cada falha gera um motivo específico (documento alterado, assinatura que não corresponde à chave do certificado ou certificado fora da validade na data da assinatura).
 
 O enunciado relaciona o hash do documento ao \texttt{encapContentInfo}. Esse campo contém o próprio documento attached, então a implementação extrai o conteúdo e calcula seu hash com o \texttt{DigestService}, usando o algoritmo indicado no \texttt{digestAlgorithm} da assinatura.
 
@@ -233,7 +233,7 @@ A cadeia é carregada na inicialização da aplicação. Se os certificados não
 Duas decisões foram tomadas nesta etapa:
 
 \begin{itemize}
-    \item \textbf{Data de referência:} a confiança é avaliada na data atual. O \texttt{signingTime} é declarado pelo próprio signatário e não é autenticado por terceiros, então não serve como referência confiável sem um carimbo do tempo. Essa abordagem segue a validação básica descrita na norma ETSI EN 319 102-1 e a política de assinatura de referência básica (AD-RB) da ICP-Brasil. Assim, uma assinatura feita com um certificado que já expirou deixa de ser válida, mesmo que tenha sido feita dentro da validade.
+    \item \textbf{Data de referência:} a confiança é avaliada na data atual. O \texttt{signingTime} é declarado pelo próprio signatário e não é autenticado por terceiros, então não serve como referência confiável sem um carimbo do tempo. Essa decisão é compatível com o modelo de validação de assinaturas da ETSI EN 319 102-1, que trata o \textit{claimed signing time} como uma indicação temporal que, em geral, não provém de uma fonte confiável. Assim, uma assinatura feita com um certificado que já expirou deixa de ser válida, mesmo que tenha sido feita dentro da validade.
     \item \textbf{Revogação:} a consulta às listas de certificados revogados (LCR) está desabilitada, pois exigiria acesso à rede para obter as listas publicadas pela AC.
 \end{itemize}
 
@@ -448,7 +448,7 @@ A primeira dificuldade foi a divergência entre o alias do certificado informado
 
 Outra dificuldade foi tornar a verificação robusta para arquivos malformados. A leitura inicial da assinatura já tratava conteúdos inválidos, mas, ao testar a verificação com assinaturas corrompidas em posições variadas, algumas falhas ainda geravam exceções não tratadas. A causa é que o BouncyCastle lê partes da estrutura, como a chave pública do certificado e os signatários, apenas quando elas são acessadas. Na API, essas falhas resultariam em erro 500. A solução foi separar a verificação em uma fase de leitura completa da estrutura, que converte qualquer falha em erro de formato, e uma fase de verificação sobre os dados já decodificados.
 
-Também foi necessário definir a data de referência da validação do certificado. A primeira implementação usava o \texttt{signingTime}, mas, como esse atributo é declarado pelo próprio signatário, a validação passou a usar a data atual, de acordo com as normas de validação de assinaturas sem carimbo do tempo.
+Também foi necessário definir a data de referência da validação do certificado. A primeira implementação usava o \texttt{signingTime}, mas, como esse atributo é declarado pelo próprio signatário, a validação passou a usar a data atual, em linha com o modelo de validação da ETSI EN 319 102-1 para assinaturas sem carimbo do tempo.
 
 Por fim, a interpretação de alguns pontos do enunciado exigiu decisões, como o critério para o status \texttt{VALIDO}, o formato aceito pelo endpoint de verificação e o formato da resposta da assinatura. Essas decisões foram tomadas buscando seguir o enunciado e estão descritas nas seções correspondentes. A pouca experiência prévia com a biblioteca BouncyCastle também foi uma dificuldade, principalmente nas classes de geração e verificação de assinaturas CMS. Além disso, o prazo para a realização do desafio foi curto, de três dias, e coincidiu com dias de semana. Por isso, foi necessário conciliar o desenvolvimento do desafio com as tarefas do meu dia a dia.
 
