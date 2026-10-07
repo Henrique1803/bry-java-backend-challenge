@@ -38,6 +38,16 @@ jobs:
       - name: Conferir o hash da etapa 1 com o sha512sum
         run: sha512sum -c artifacts/doc.txt.sha512
 
+      # Verificação independente da etapa 2: assinatura e cadeia de confiança conferidas pelo OpenSSL
+      - name: Conferir a assinatura da etapa 2 com o OpenSSL
+        run: |
+          for certificate in resources/cadeia/*.cer; do
+            openssl x509 -inform DER -in "$certificate"
+          done > "$RUNNER_TEMP/cadeia.pem"
+          openssl cms -verify -inform DER -in artifacts/doc.txt.p7s \
+            -CAfile "$RUNNER_TEMP/cadeia.pem" -purpose any -out "$RUNNER_TEMP/conteudo.txt"
+          cmp "$RUNNER_TEMP/conteudo.txt" resources/arquivos/doc.txt
+
       - name: Publicar relatório de cobertura
         if: always()
         uses: actions/upload-artifact@v7

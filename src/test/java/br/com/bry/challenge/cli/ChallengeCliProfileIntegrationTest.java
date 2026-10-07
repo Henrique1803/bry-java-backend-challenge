@@ -18,7 +18,7 @@ import org.springframework.test.context.DynamicPropertySource;
 /** Sobe a aplicação com o perfil "cli", gravando os artefatos em um diretório temporário. */
 @SpringBootTest
 @ActiveProfiles("cli")
-class ChallengeCliProfileTest {
+class ChallengeCliProfileIntegrationTest {
 
     @TempDir
     static Path outputDirectory;
@@ -32,9 +32,10 @@ class ChallengeCliProfileTest {
     private ApplicationContext context;
 
     @Test
-    @DisplayName("No perfil cli, executa as etapas sem subir o servidor web")
+    @DisplayName("Executa as etapas no perfil cli sem subir o servidor web")
     void runsChallengeStepsWithoutWebServer() {
         assertThat(context).isNotInstanceOf(WebServerApplicationContext.class);
         assertThat(outputDirectory.resolve("doc.txt.sha512")).exists();
+        assertThat(outputDirectory.resolve("doc.txt.p7s")).exists();
     }
 }

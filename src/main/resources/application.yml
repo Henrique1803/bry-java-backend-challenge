@@ -11,6 +11,13 @@ management:
       exposure:
         include: health,info
 
+# Artefatos do desafio usados pelo modo CLI (perfil "cli"). Os valores podem ser sobrescritos por
+# argumentos (--challenge.pkcs12.password=...) ou variáveis de ambiente (CHALLENGE_PKCS12_PASSWORD).
 challenge:
   document: resources/arquivos/doc.txt
   output-directory: artifacts
+  pkcs12:
+    path: resources/pkcs12/certificado_teste_hub.pfx
+    alias: "{e2618a8b-20de-4dd2-b209-70912e3177f4}"
+    # Senha do certificado de teste fornecido pelo desafio
+    password: bry123456
