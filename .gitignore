@@ -14,5 +14,14 @@ out/
 # Spring Boot
 HELP.md
 
+# LaTeX (arquivos auxiliares da compilação do relatório)
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+
 # Sistema operacional
 .DS_Store

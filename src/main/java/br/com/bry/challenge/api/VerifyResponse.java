@@ -4,10 +4,7 @@ import java.security.cert.X509Certificate;
 import java.time.Instant;
 import java.util.List;
 
-import javax.security.auth.x500.X500Principal;
-
-import org.bouncycastle.asn1.x500.X500Name;
-
+import br.com.bry.challenge.crypto.CertificateInfo;
 import br.com.bry.challenge.crypto.VerificationResult;
 
 /**
@@ -44,18 +41,6 @@ public record VerifyResponse(Status status, Infos infos, Details details) {
                           List<String> certificationPath, List<String> failureReasons) {
     }
 
-    public record CertificateInfo(String subject, String issuer, String serialNumber, Instant notBefore, Instant notAfter) {
-
-        static CertificateInfo from(X509Certificate certificate) {
-            return new CertificateInfo(
-                    format(certificate.getSubjectX500Principal()),
-                    format(certificate.getIssuerX500Principal()),
-                    certificate.getSerialNumber().toString(16).toUpperCase(),
-                    certificate.getNotBefore().toInstant(),
-                    certificate.getNotAfter().toInstant());
-        }
-    }
-
     public static VerifyResponse from(VerificationResult result) {
         X509Certificate certificate = result.signerCertificate();
         return new VerifyResponse(
@@ -65,12 +50,7 @@ public record VerifyResponse(Status status, Infos infos, Details details) {
                         result.integrityValid(),
                         result.certificateTrusted(),
                         certificate == null ? null : CertificateInfo.from(certificate),
-                        result.certificationPath().stream().map(c -> format(c.getSubjectX500Principal())).toList(),
+                        result.certificationPath().stream().map(c -> CertificateInfo.from(c).subject()).toList(),
                         result.failureReasons()));
-    }
-
-    /** Nome X.500 legível (inclusive o e-mail, que o Java exibe como OID). */
-    private static String format(X500Principal principal) {
-        return X500Name.getInstance(principal.getEncoded()).toString();
     }
 }

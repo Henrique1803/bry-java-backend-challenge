@@ -230,7 +230,7 @@ A coleção [`docs/bry-challenge.postman_collection.json`](docs/bry-challenge.po
 ./mvnw clean verify
 ```
 
-São 92 testes (73 de unidade e 19 de integração). O build falha se a cobertura ficar abaixo de 90% das linhas ou 80% dos branches. O relatório de cobertura do JaCoCo é gerado em `target/site/jacoco/index.html`.
+São 94 testes (75 de unidade e 19 de integração). O build falha se a cobertura ficar abaixo de 90% das linhas ou 80% dos branches. O relatório de cobertura do JaCoCo é gerado em `target/site/jacoco/index.html`.
 
 ## Configuração
 

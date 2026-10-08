@@ -129,6 +129,7 @@ As principais classes do pacote \texttt{crypto} são:
     \item \texttt{Pkcs12CredentialLoader} e \texttt{SigningCredential}: leitura da chave privada e do certificado;
     \item \texttt{CmsSigner}: geração da assinatura CMS;
     \item \texttt{CmsVerifier} e \texttt{VerificationResult}: verificação da assinatura e seu resultado;
+    \item \texttt{CertificateInfo}: informações do certificado em formato legível, usadas pela linha de comando e pela API;
     \item \texttt{CertificateTrustValidator}: validação da cadeia de confiança;
     \item \texttt{CryptoException} e \texttt{CryptoErrorCode}: erros do domínio.
 \end{itemize}
@@ -385,7 +386,7 @@ Os caminhos dos arquivos, o alias e a senha do PKCS12 ficam no \texttt{applicati
 
 \section{Testes e qualidade}
 
-O projeto possui 92 testes automatizados: 73 de unidade e 19 de integração. Os testes de integração sobem a aplicação com o Spring e são identificados pelo sufixo \texttt{IntegrationTest}.
+O projeto possui 94 testes automatizados: 75 de unidade e 19 de integração. Os testes de integração sobem a aplicação com o Spring e são identificados pelo sufixo \texttt{IntegrationTest}.
 
 \begin{center}
 \footnotesize
@@ -400,6 +401,7 @@ O projeto possui 92 testes automatizados: 73 de unidade e 19 de integração. Os
 \texttt{CmsVerifierTest} & 16 & Base64 e DER, documento e assinatura alterados, chave que não corresponde ao certificado, signatário não confiável, certificado expirado, formatos inválidos \\
 \texttt{CertificateTrustValidatorTest} & 8 & cadeia da Bry, AC desconhecida, intermediária ausente ou embutida, período de validade, cadeia inválida \\
 \texttt{VerificationResultTest} & 2 & nome do signatário \\
+\texttt{CertificateInfoTest} & 2 & dados do certificado e e-mail legível \\
 \texttt{ChallengeStepsRunnerTest} & 6 & arquivos e saída das etapas 1, 2 e 3 e falhas de configuração \\
 \texttt{ApiExceptionHandlerTest} & 8 & status HTTP de cada código de erro e erro inesperado \\
 \texttt{SignatureControllerIntegrationTest} & 16 & assinatura, verificação em Base64 e DER, assinaturas inválidas e erros da API \\
@@ -477,6 +479,6 @@ O código-fonte, os testes, os artefatos e as instruções de execução estão 
 
 O desafio foi concluído com todas as etapas solicitadas, incluindo a etapa opcional de distribuição. O projeto calcula e grava o hash SHA-512 do documento, gera uma assinatura CMS attached com SHA-512 e RSA, verifica sua integridade e a confiança do certificado na cadeia fornecida e apresenta as informações do signatário.
 
-A API REST reutiliza as mesmas classes da linha de comando e oferece os endpoints de assinatura e verificação no formato solicitado, com tratamento de erros padronizado. A implementação é validada por 92 testes automatizados, por um pipeline que também confere os resultados com ferramentas independentes e por uma imagem Docker publicada a cada versão.
+A API REST reutiliza as mesmas classes da linha de comando e oferece os endpoints de assinatura e verificação no formato solicitado, com tratamento de erros padronizado. A implementação é validada por 94 testes automatizados, por um pipeline que também confere os resultados com ferramentas independentes e por uma imagem Docker publicada a cada versão.
 
 \end{document}

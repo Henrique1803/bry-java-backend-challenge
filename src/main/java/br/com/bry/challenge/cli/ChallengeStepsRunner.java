@@ -5,13 +5,9 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.HexFormat;
 
-import javax.security.auth.x500.X500Principal;
-
-import org.bouncycastle.asn1.x500.X500Name;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -20,6 +16,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import br.com.bry.challenge.config.ChallengeProperties;
+import br.com.bry.challenge.crypto.CertificateInfo;
 import br.com.bry.challenge.crypto.CmsSigner;
 import br.com.bry.challenge.crypto.CmsVerifier;
 import br.com.bry.challenge.crypto.DigestService;
@@ -85,7 +82,7 @@ public class ChallengeStepsRunner implements ApplicationRunner {
 
         log.info("");
         log.info("Etapa 2 - Assinatura digital (CMS attached, {})", CmsSigner.SIGNATURE_ALGORITHM);
-        log.info("  Signatário: {}", format(credential.certificate().getSubjectX500Principal()));
+        log.info("  Signatário: {}", CertificateInfo.from(credential.certificate()).subject());
         log.info("  Arquivo:    {} ({} bytes)", output, signature.length);
         return output;
     }
@@ -93,7 +90,6 @@ public class ChallengeStepsRunner implements ApplicationRunner {
     /** Etapa 3: verifica a assinatura gravada na etapa 2 e imprime as informações do signatário. */
     private void verifySignature(Path signatureFile) throws IOException {
         VerificationResult result = cmsVerifier.verify(Files.readAllBytes(signatureFile));
-        X509Certificate certificate = result.signerCertificate();
 
         log.info("");
         log.info("Etapa 3 - Verificação da assinatura ({})", signatureFile);
@@ -103,27 +99,23 @@ public class ChallengeStepsRunner implements ApplicationRunner {
         log.info("  Data da assinatura:     {}", result.signingTime());
         log.info("  Algoritmo de hash:      {}", result.digestAlgorithm());
         log.info("  Hash do documento:      {}", result.documentHash());
-        if (certificate != null) {
+        if (result.signerCertificate() != null) {
+            CertificateInfo certificate = CertificateInfo.from(result.signerCertificate());
             log.info("  Signatário (CN):        {}", result.signerName());
-            log.info("  Titular:                {}", format(certificate.getSubjectX500Principal()));
-            log.info("  Emissor:                {}", format(certificate.getIssuerX500Principal()));
-            log.info("  Número de série:        {}", certificate.getSerialNumber().toString(16).toUpperCase());
-            log.info("  Validade:               {} a {}", certificate.getNotBefore().toInstant(), certificate.getNotAfter().toInstant());
+            log.info("  Titular:                {}", certificate.subject());
+            log.info("  Emissor:                {}", certificate.issuer());
+            log.info("  Número de série:        {}", certificate.serialNumber());
+            log.info("  Validade:               {} a {}", certificate.notBefore(), certificate.notAfter());
         }
         for (int i = 0; i < result.certificationPath().size(); i++) {
             log.info(i == 0 ? "  Caminho de certificação: {}. {}" : "                          {}. {}",
-                    i + 1, format(result.certificationPath().get(i).getSubjectX500Principal()));
+                    i + 1, CertificateInfo.from(result.certificationPath().get(i)).subject());
         }
         result.failureReasons().forEach(reason -> log.info("  Motivo da falha:        {}", reason));
 
         if (!result.valid()) {
             throw new IllegalStateException("A assinatura gerada na etapa 2 não passou na verificação da etapa 3");
         }
-    }
-
-    /** Formata o nome X.500 de forma legível (inclusive o e-mail, que o Java exibe como OID). */
-    private static String format(X500Principal principal) {
-        return X500Name.getInstance(principal.getEncoded()).toString();
     }
 
     private SigningCredential loadCredential() throws IOException {

@@ -15,7 +15,7 @@ public enum CryptoErrorCode {
     /** A senha informada não abre o PKCS12 ou não dá acesso à chave privada. */
     INVALID_PASSWORD,
 
-    /** O PKCS12 não contém chave privada, ou contém várias e o alias não identifica nenhuma. */
+    /** O PKCS12 não contém a chave privada esperada: não há chave, o alias não corresponde a uma chave ou há várias e nenhum alias foi informado. */
     PRIVATE_KEY_NOT_FOUND,
 
     /** A chave privada não é do tipo exigido (RSA). */

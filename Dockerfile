@@ -45,5 +45,5 @@ HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 \
     CMD curl -fsS http://localhost:8080/actuator/health || exit 1
 
 # Argumentos extras são repassados para a aplicação, por exemplo:
-#   docker run bry-challenge --spring.profiles.active=cli
+#   docker run bry-java-backend-challenge:local --spring.profiles.active=cli
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75.0", "-jar", "/app/app.jar"]
