@@ -222,7 +222,7 @@ Os erros seguem o formato Problem Details (RFC 9457), com o campo `code`:
 
 ### Postman
 
-A coleção [`docs/bry-challenge.postman_collection.json`](docs/bry-challenge.postman_collection.json) tem as duas requisições prontas.
+A coleção [`docs/bry-challenge.postman_collection.json`](docs/bry-challenge.postman_collection.json) tem as duas requisições prontas. Para que os arquivos sejam encontrados, configure o Working Directory do Postman para a pasta `bry-java-backend-challenge` ou selecione os arquivos manualmente.
 
 ## Testes
 
