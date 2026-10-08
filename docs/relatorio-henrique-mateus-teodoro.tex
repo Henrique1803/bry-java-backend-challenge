@@ -152,7 +152,7 @@ Uma assinatura bem formada, mas inválida, não é tratada como erro. Nesse caso
 
 \subsection{Relógio injetável}
 
-O momento da assinatura e a data da verificação são obtidos de um \texttt{java.time.Clock} injetado, portanto ele usa o relógio do sistema. Nos testes, um relógio fixo torna os resultados determinísticos. Isso evita, por exemplo, que os testes passem a falhar quando o certificado do desafio expirar.
+O momento da assinatura e a data da verificação são obtidos de um \texttt{java.time.Clock} injetado. Em produção, ele usa o relógio do sistema. Nos testes, um relógio fixo torna os resultados determinísticos. Isso evita, por exemplo, que os testes passem a falhar quando o certificado do desafio expirar.
 
 \section{Implementação das etapas}
 
@@ -180,7 +180,7 @@ A classe \texttt{Pkcs12CredentialLoader} lê o arquivo PKCS12 com a classe \text
 
 Se o alias não existir, ou se houver várias chaves e nenhum alias, a operação falha com uma mensagem que lista as chaves disponíveis. Também são validados a senha, o formato do arquivo e o tipo da chave, que precisa ser RSA. Uma senha incorreta é diferenciada de um arquivo corrompido, para que a mensagem de erro seja precisa.
 
-\noindent\textcolor{red}{\textbf{Importante:}} Durante a implementação, foi identificado que o alias informado no enunciado "\texttt{e2618a8b-20de-4dd2-b209-70912e3177f4}" não corresponde ao alias gravado no arquivo, que está entre chaves: "\texttt{\{e2618a8b-20de-4dd2-b209-70912e3177f4\}}". A diferença foi confirmada com a ferramenta \texttt{keytool} do Java. A configuração da aplicação usa o alias real, presente no arquivo.
+\noindent\textcolor{red}{\textbf{Importante:}} Durante a implementação, foi identificado que o alias informado no enunciado ``\texttt{e2618a8b-20de-4dd2-b209-70912e3177f4}'' não corresponde ao alias gravado no arquivo, que está entre chaves: ``\texttt{\{e2618a8b-20de-4dd2-b209-70912e3177f4\}}''. A diferença foi confirmada com a ferramenta \texttt{keytool} do Java. A configuração da aplicação usa o alias real, presente no arquivo.
 
 \subsubsection{Geração da assinatura}
 
@@ -441,7 +441,8 @@ O workflow de release é disparado por tags no formato \texttt{vX.Y.Z}. Ele reap
 Com a imagem, a API pode ser executada sem clonar o repositório:
 
 \begin{lstlisting}
-docker run -p 8080:8080 ghcr.io/henrique1803/bry-java-backend-challenge:1.0.0
+docker run -p 8080:8080 \
+    ghcr.io/henrique1803/bry-java-backend-challenge:1.0.0
 \end{lstlisting}
 
 \section{Dificuldades encontradas}
